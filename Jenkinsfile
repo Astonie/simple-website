@@ -81,25 +81,7 @@ podTemplate(
                 """
             }
 
-            stage('Check Kubectl Config') {
-                sh """
-                    set -e
-                    kubectl config get-contexts
-                    kubectl config use-context minikube
-                """
-            }
-
-            stage('Deploy to Minikube') {
-                sh """
-                    set -e
-                    if ! kubectl get deployment ${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE} > /dev/null 2>&1; then
-                        kubectl apply -f your-kube-deployment.yaml
-                    else
-                        kubectl set image deployment/${DEPLOYMENT_NAME} ${DEPLOYMENT_NAME}=${FULL_IMAGE_NAME} -n ${K8S_NAMESPACE}
-                    fi
-                    kubectl rollout status deployment/${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE}
-                """
-            }
+            
         } catch (Exception e) {
             error "Pipeline failed: ${e.message}"
         } finally {
