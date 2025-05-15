@@ -27,7 +27,6 @@ podTemplate(
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[url: 'https://github.com/Astonie/simple-website.git']]
                 ])
-                // Define IMAGE_TAG after cloning the repository
                 def IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
                 echo "Full Image Name: ${FULL_IMAGE_NAME}"
@@ -50,7 +49,11 @@ podTemplate(
             stage('Test Image') {
                 sh """
                     set -e
-                    podman run --rm ${FULL_IMAGE_NAME} <test-command>
+                    podman run -d --name test-nginx -p 8080:80 ${FULL_IMAGE_NAME}
+                    sleep 5
+                    curl http://localhost:8080
+                    podman stop test-nginx
+                    podman rm test-nginx
                 """
             }
 
@@ -85,7 +88,7 @@ podTemplate(
         } catch (Exception e) {
             error "Pipeline failed: ${e.message}"
         } finally {
-            cleanWs()
+            deleteDir() // Replaced cleanWs with deleteDir
         }
     }
 }
