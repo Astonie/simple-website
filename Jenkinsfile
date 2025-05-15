@@ -9,24 +9,14 @@ podTemplate(
             privileged: true,
             envVars: [
                 envVar(key: 'PATH', value: '/usr/local/bin:$PATH')
-            ],
-            volumeMounts: [
-                // Mount the host's kubeconfig file
-                volumeMount(name: 'kubeconfig', mountPath: '/home/jenkins/.kube', readOnly: true)
             ]
         )
-    ],
-    volumes: [
-        // Define the hostPath volume for kubeconfig
-        hostPathVolume(hostPath: '/home/jenkins/.kube', mountPath: '/home/jenkins/.kube')
     ]
 ) {
     node('podman-agent') {
         def DOCKER_REGISTRY = 'docker.io'
         def DOCKER_USERNAME = 'mukiwa'
         def IMAGE_NAME = 'simple-website'
-        def K8S_NAMESPACE = 'default'
-        def DEPLOYMENT_NAME = 'simple-site'
         def FULL_IMAGE_NAME
 
         try {
@@ -80,8 +70,6 @@ podTemplate(
                     podman push ${FULL_IMAGE_NAME}
                 """
             }
-
-            
         } catch (Exception e) {
             error "Pipeline failed: ${e.message}"
         } finally {
