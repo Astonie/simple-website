@@ -11,6 +11,7 @@ podTemplate(
     ]
 ) {
     node('podman-agent') {
+        // Define environment variables here
         environment {
             // Docker registry details
             DOCKER_REGISTRY = 'docker.io'
@@ -38,7 +39,7 @@ podTemplate(
         stage('Build Image') {
             sh '''
                 echo "Building container image..."
-                podman build -t mukiwa/simple-website:latest .
+                podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
             '''
         }
 
