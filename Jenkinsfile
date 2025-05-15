@@ -11,6 +11,15 @@ podTemplate(
     ]
 ) {
     node('podman-agent') {
+        environment {
+            // Define the variables for easy configuration
+            DOCKER_REGISTRY = 'docker.io'
+            DOCKER_USERNAME = 'mukiwa' // Replace with your Docker Hub username
+            IMAGE_NAME = 'simple-website'
+            IMAGE_TAG = 'latest'
+            FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+
         stage('Clone Repository') {
             checkout([$class: 'GitSCM',
                 branches: [[name: '*/main']],
@@ -27,24 +36,27 @@ podTemplate(
         }
 
         stage('Tag Image for Registry') {
-            sh 'podman tag simple-site:latest docker.io/your-docker-username/simple-site:latest'
+            // Tag the image with the correct registry URL
+            sh "podman tag simple-site:latest ${FULL_IMAGE_NAME}"
         }
 
         stage('Login to Docker Registry') {
             withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                sh 'podman login -u $DOCKER_USER -p $DOCKER_PASS docker.io'
+                sh 'echo $DOCKER_PASS | podman login --username $DOCKER_USER --password-stdin $DOCKER_REGISTRY'
             }
         }
 
         stage('Push Image to Registry') {
-            sh 'podman push docker.io/mukiwa/simple-site:latest'
+            // Push the image to Docker Hub using the full image name
+            sh "podman push ${FULL_IMAGE_NAME}"
         }
 
         stage('Deploy to Minikube') {
-            // Make sure your kubeconfig is available and kubectl is installed in the agent
-            sh 'kubectl set image deployment/simple-site simple-site=docker.io/mukiwa/simple-site:latest --namespace=default || kubectl apply -f your-kube-deployment.yaml'
+            // Ensure the kubectl context is set for Minikube (check if kubectl is installed)
+            sh '''
+                kubectl config use-context minikube || exit 1
+                kubectl set image deployment/simple-website simple-website=${FULL_IMAGE_NAME} --namespace=default || kubectl apply -f k8s-deployment.yaml
+            '''
         }
     }
 }
-
-// This Jenkinsfile builds, pushes, and deploys a container image using Podman and Minikube.
