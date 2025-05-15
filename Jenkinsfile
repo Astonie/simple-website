@@ -24,7 +24,6 @@ podTemplate(
             DEPLOYMENT_NAME = 'simple-site'
         }
 
-        // Stage to clone the repository
         stage('Clone Repository') {
             checkout([$class: 'GitSCM',
                 branches: [[name: '*/main']],
@@ -32,12 +31,10 @@ podTemplate(
             ])
         }
 
-        // Stage to check Podman version
         stage('Check Podman Version') {
             sh 'podman --version'
         }
 
-        // Stage to build the container image
         stage('Build Image') {
             sh '''
                 echo "Building container image..."
@@ -45,12 +42,10 @@ podTemplate(
             '''
         }
 
-        // Stage to tag the image with full registry name
         stage('Tag Image for Registry') {
             sh "podman tag ${IMAGE_NAME}:${IMAGE_TAG} ${FULL_IMAGE_NAME}"
         }
 
-        // Stage to log into Docker registry
         stage('Login to Docker Registry') {
             withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 sh '''
@@ -60,7 +55,6 @@ podTemplate(
             }
         }
 
-        // Stage to push the image to Docker registry
         stage('Push Image to Registry') {
             sh '''
                 echo "Pushing image to Docker Hub..."
@@ -68,12 +62,10 @@ podTemplate(
             '''
         }
 
-        // Stage to deploy to Minikube
         stage('Deploy to Minikube') {
-            // Ensure the kubectl context is set for Minikube
             sh '''
                 echo "Checking kubectl context..."
-                kubectl config get-contexts || exit 1  // List contexts for debugging
+                kubectl config get-contexts || exit 1
                 kubectl config use-context minikube || exit 1
                 echo "Deploying image to Minikube..."
                 kubectl set image deployment/${DEPLOYMENT_NAME} ${DEPLOYMENT_NAME}=${FULL_IMAGE_NAME} --namespace=${K8S_NAMESPACE} || kubectl apply -f your-kube-deployment.yaml
