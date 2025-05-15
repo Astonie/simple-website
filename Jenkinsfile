@@ -42,19 +42,29 @@ podTemplate(
 
         stage('Login to Docker Registry') {
             withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                sh 'echo $DOCKER_PASS | podman login --username $DOCKER_USER --password-stdin $DOCKER_REGISTRY'
+                // Logging into Docker Hub using the credentials
+                sh '''
+                    echo "Logging into Docker Hub..."
+                    echo $DOCKER_PASS | podman login --username $DOCKER_USER --password-stdin $DOCKER_REGISTRY
+                '''
             }
         }
 
         stage('Push Image to Registry') {
             // Push the image to Docker Hub using the full image name
-            sh "podman push ${FULL_IMAGE_NAME}"
+            sh '''
+                echo "Pushing image to Docker Hub..."
+                podman push ${FULL_IMAGE_NAME}
+            '''
         }
 
         stage('Deploy to Minikube') {
             // Ensure the kubectl context is set for Minikube (check if kubectl is installed)
             sh '''
+                echo "Checking kubectl context..."
+                kubectl config get-contexts || exit 1  // List contexts for debugging
                 kubectl config use-context minikube || exit 1
+                echo "Deploying image to Minikube..."
                 kubectl set image deployment/simple-site simple-site=${FULL_IMAGE_NAME} --namespace=default || kubectl apply -f your-kube-deployment.yaml
             '''
         }
