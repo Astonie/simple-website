@@ -3,7 +3,7 @@ podTemplate(
     containers: [
         containerTemplate(
             name: 'jnlp',
-            image: 'mukiwa/jenkins-podman-agent:latest',
+            image: 'mukiwa/jenkins-podman-kubectl-agent',
             ttyEnabled: true,
             args: '${computer.jnlpmac} ${computer.name}',
             privileged: true
