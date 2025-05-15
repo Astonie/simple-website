@@ -8,8 +8,12 @@ podTemplate(
             args: '${computer.jnlpmac} ${computer.name}',
             privileged: true,
             envVars: [
-                // Ensure kubectl is in the path
-                [key: 'PATH', value: '/usr/local/bin:$PATH']
+                // Explicitly add the $class attribute to each environment variable
+                [
+                    $class: 'org.csanchez.jenkins.plugins.kubernetes.model.TemplateEnvVar',
+                    key: 'PATH',
+                    value: '/usr/local/bin:$PATH'
+                ]
             ]
         )
     ]
