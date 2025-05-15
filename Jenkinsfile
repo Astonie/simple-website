@@ -12,14 +12,19 @@ podTemplate(
 ) {
     node('podman-agent') {
         environment {
-            // Define the variables for easy configuration
+            // Docker registry details
             DOCKER_REGISTRY = 'docker.io'
             DOCKER_USERNAME = 'mukiwa' // Replace with your Docker Hub username
             IMAGE_NAME = 'simple-website'
             IMAGE_TAG = 'latest'
-            FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}" // Ensure this variable is defined
+            FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+            // Minikube/Kubernetes details
+            K8S_NAMESPACE = 'default'
+            DEPLOYMENT_NAME = 'simple-site'
         }
 
+        // Stage to clone the repository
         stage('Clone Repository') {
             checkout([$class: 'GitSCM',
                 branches: [[name: '*/main']],
@@ -27,22 +32,27 @@ podTemplate(
             ])
         }
 
+        // Stage to check Podman version
         stage('Check Podman Version') {
             sh 'podman --version'
         }
 
+        // Stage to build the container image
         stage('Build Image') {
-            sh 'podman build -t simple-site:latest .'
+            sh '''
+                echo "Building container image..."
+                podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+            '''
         }
 
+        // Stage to tag the image with full registry name
         stage('Tag Image for Registry') {
-            // Tag the image with the correct registry URL
-            sh "podman tag simple-site:latest ${FULL_IMAGE_NAME}"
+            sh "podman tag ${IMAGE_NAME}:${IMAGE_TAG} ${FULL_IMAGE_NAME}"
         }
 
+        // Stage to log into Docker registry
         stage('Login to Docker Registry') {
             withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                // Logging into Docker Hub using the credentials
                 sh '''
                     echo "Logging into Docker Hub..."
                     echo $DOCKER_PASS | podman login --username $DOCKER_USER --password-stdin $DOCKER_REGISTRY
@@ -50,22 +60,23 @@ podTemplate(
             }
         }
 
+        // Stage to push the image to Docker registry
         stage('Push Image to Registry') {
-            // Push the image to Docker Hub using the full image name
             sh '''
                 echo "Pushing image to Docker Hub..."
                 podman push ${FULL_IMAGE_NAME}
             '''
         }
 
+        // Stage to deploy to Minikube
         stage('Deploy to Minikube') {
-            // Ensure the kubectl context is set for Minikube (check if kubectl is installed)
+            // Ensure the kubectl context is set for Minikube
             sh '''
                 echo "Checking kubectl context..."
                 kubectl config get-contexts || exit 1  // List contexts for debugging
                 kubectl config use-context minikube || exit 1
                 echo "Deploying image to Minikube..."
-                kubectl set image deployment/simple-site simple-site=${FULL_IMAGE_NAME} --namespace=default || kubectl apply -f your-kube-deployment.yaml
+                kubectl set image deployment/${DEPLOYMENT_NAME} ${DEPLOYMENT_NAME}=${FULL_IMAGE_NAME} --namespace=${K8S_NAMESPACE} || kubectl apply -f your-kube-deployment.yaml
             '''
         }
     }
