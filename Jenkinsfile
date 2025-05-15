@@ -39,12 +39,12 @@ podTemplate(
         stage('Build Image') {
             sh '''
                 echo "Building container image..."
-                podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                podman build -t ${FULL_IMAGE_NAME} .
             '''
         }
 
         stage('Tag Image for Registry') {
-            sh "podman tag ${IMAGE_NAME}:${IMAGE_TAG} ${FULL_IMAGE_NAME}"
+            sh "podman tag ${FULL_IMAGE_NAME} ${FULL_IMAGE_NAME}"
         }
 
         stage('Login to Docker Registry') {
