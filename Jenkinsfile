@@ -11,19 +11,15 @@ podTemplate(
     ]
 ) {
     node('podman-agent') {
-        // Define environment variables here
-        environment {
-            // Docker registry details
-            DOCKER_REGISTRY = 'docker.io'
-            DOCKER_USERNAME = 'mukiwa' // Replace with your Docker Hub username
-            IMAGE_NAME = 'simple-website'
-            IMAGE_TAG = 'latest'
-            FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+        // ✅ Use regular Groovy variable declarations here
+        def DOCKER_REGISTRY = 'docker.io'
+        def DOCKER_USERNAME = 'mukiwa'
+        def IMAGE_NAME = 'simple-website'
+        def IMAGE_TAG = 'latest'
+        def FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
 
-            // Minikube/Kubernetes details
-            K8S_NAMESPACE = 'default'
-            DEPLOYMENT_NAME = 'simple-site'
-        }
+        def K8S_NAMESPACE = 'default'
+        def DEPLOYMENT_NAME = 'simple-site'
 
         stage('Clone Repository') {
             checkout([$class: 'GitSCM',
@@ -37,40 +33,34 @@ podTemplate(
         }
 
         stage('Build Image') {
-            sh '''
+            sh """
                 echo "Building container image..."
                 podman build -t ${FULL_IMAGE_NAME} .
-            '''
-        }
-
-        stage('Tag Image for Registry') {
-            sh "podman tag ${FULL_IMAGE_NAME} ${FULL_IMAGE_NAME}"
+            """
         }
 
         stage('Login to Docker Registry') {
             withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                sh '''
+                sh """
                     echo "Logging into Docker Hub..."
-                    echo $DOCKER_PASS | podman login --username $DOCKER_USER --password-stdin $DOCKER_REGISTRY
-                '''
+                    echo \$DOCKER_PASS | podman login --username \$DOCKER_USER --password-stdin ${DOCKER_REGISTRY}
+                """
             }
         }
 
         stage('Push Image to Registry') {
-            sh '''
+            sh """
                 echo "Pushing image to Docker Hub..."
                 podman push ${FULL_IMAGE_NAME}
-            '''
+            """
         }
 
         stage('Deploy to Minikube') {
-            sh '''
-                echo "Checking kubectl context..."
-                kubectl config get-contexts || exit 1
-                kubectl config use-context minikube || exit 1
+            sh """
                 echo "Deploying image to Minikube..."
+                kubectl config use-context minikube || exit 1
                 kubectl set image deployment/${DEPLOYMENT_NAME} ${DEPLOYMENT_NAME}=${FULL_IMAGE_NAME} --namespace=${K8S_NAMESPACE} || kubectl apply -f your-kube-deployment.yaml
-            '''
+            """
         }
     }
 }
