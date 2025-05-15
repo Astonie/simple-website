@@ -17,10 +17,9 @@ podTemplate(
         def DOCKER_REGISTRY = 'docker.io'
         def DOCKER_USERNAME = 'mukiwa'
         def IMAGE_NAME = 'simple-website'
-        def IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        def FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
         def K8S_NAMESPACE = 'default'
         def DEPLOYMENT_NAME = 'simple-site'
+        def FULL_IMAGE_NAME
 
         try {
             stage('Clone Repository') {
@@ -28,6 +27,10 @@ podTemplate(
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[url: 'https://github.com/Astonie/simple-website.git']]
                 ])
+                // Define IMAGE_TAG after cloning the repository
+                def IMAGE_TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+                echo "Full Image Name: ${FULL_IMAGE_NAME}"
             }
 
             stage('Check Podman Version') {
