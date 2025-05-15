@@ -38,7 +38,7 @@ podTemplate(
         stage('Build Image') {
             sh '''
                 echo "Building container image..."
-                podman build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                podman build -t mukiwa/simple-website:latest .
             '''
         }
 
