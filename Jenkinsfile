@@ -9,8 +9,16 @@ podTemplate(
             privileged: true,
             envVars: [
                 envVar(key: 'PATH', value: '/usr/local/bin:$PATH')
+            ],
+            volumeMounts: [
+                // Mount the host's kubeconfig file
+                volumeMount(name: 'kubeconfig', mountPath: '/home/jenkins/.kube', readOnly: true)
             ]
         )
+    ],
+    volumes: [
+        // Define the hostPath volume for kubeconfig
+        hostPathVolume(hostPath: '/home/jenkins/.kube', mountPath: '/home/jenkins/.kube')
     ]
 ) {
     node('podman-agent') {
@@ -73,10 +81,17 @@ podTemplate(
                 """
             }
 
+            stage('Check Kubectl Config') {
+                sh """
+                    set -e
+                    kubectl config get-contexts
+                    kubectl config use-context minikube
+                """
+            }
+
             stage('Deploy to Minikube') {
                 sh """
                     set -e
-                    kubectl config use-context minikube
                     if ! kubectl get deployment ${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE} > /dev/null 2>&1; then
                         kubectl apply -f your-kube-deployment.yaml
                     else
@@ -88,7 +103,7 @@ podTemplate(
         } catch (Exception e) {
             error "Pipeline failed: ${e.message}"
         } finally {
-            deleteDir() // Replaced cleanWs with deleteDir
+            deleteDir()
         }
     }
 }
