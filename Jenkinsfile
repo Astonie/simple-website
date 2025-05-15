@@ -22,15 +22,29 @@ podTemplate(
             sh 'podman --version'
         }
 
-        stage('Build with Podman') {
+        stage('Build Image') {
             sh 'podman build -t simple-site:latest .'
         }
 
-        stage('Run with Podman (Optional)') {
-            sh 'podman run -d -p 8080:80 simple-site:latest || true'
+        stage('Tag Image for Registry') {
+            sh 'podman tag simple-site:latest docker.io/your-docker-username/simple-site:latest'
+        }
+
+        stage('Login to Docker Registry') {
+            withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                sh 'podman login -u $DOCKER_USER -p $DOCKER_PASS docker.io'
+            }
+        }
+
+        stage('Push Image to Registry') {
+            sh 'podman push docker.io/mukiwa/simple-site:latest'
+        }
+
+        stage('Deploy to Minikube') {
+            // Make sure your kubeconfig is available and kubectl is installed in the agent
+            sh 'kubectl set image deployment/simple-site simple-site=docker.io/mukiwa/simple-site:latest --namespace=default || kubectl apply -f your-kube-deployment.yaml'
         }
     }
 }
 
-// This Jenkinsfile uses a Podman agent to build and run a simple website.
-// It includes stages for cloning the repository, checking the Podman version, building the Docker image, and running the container.
+// This Jenkinsfile builds, pushes, and deploys a container image using Podman and Minikube.
