@@ -17,7 +17,7 @@ podTemplate(
             DOCKER_USERNAME = 'mukiwa' // Replace with your Docker Hub username
             IMAGE_NAME = 'simple-website'
             IMAGE_TAG = 'latest'
-            FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+            FULL_IMAGE_NAME = "${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}" // Ensure this variable is defined
         }
 
         stage('Clone Repository') {
@@ -55,7 +55,7 @@ podTemplate(
             // Ensure the kubectl context is set for Minikube (check if kubectl is installed)
             sh '''
                 kubectl config use-context minikube || exit 1
-                kubectl set image deployment/simple-website simple-website=${FULL_IMAGE_NAME} --namespace=default || kubectl apply -f k8s-deployment.yaml
+                kubectl set image deployment/simple-site simple-site=${FULL_IMAGE_NAME} --namespace=default || kubectl apply -f your-kube-deployment.yaml
             '''
         }
     }
