@@ -6,7 +6,11 @@ podTemplate(
             image: 'mukiwa/jenkins-podman-kubectl-agent',
             ttyEnabled: true,
             args: '${computer.jnlpmac} ${computer.name}',
-            privileged: true
+            privileged: true,
+            envVars: [
+                // Ensure kubectl is in the path
+                [key: 'PATH', value: '/usr/local/bin:$PATH']
+            ]
         )
     ]
 ) {
