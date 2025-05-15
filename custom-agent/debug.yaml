@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: docker-debug
+  namespace: jenkins
+spec:
+  containers:
+  - name: agent
+    image: mukiwa/jenkins-docker-agent:latest
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "250m"
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run
+    command: [ "sleep", "9999" ]
+
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run
+      type: Directory
+  restartPolicy: Never
