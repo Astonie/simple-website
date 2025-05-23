@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # Needed to fetch tags
+        fetch-depth: 0  # So we can access all tags
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -53,9 +53,13 @@ jobs:
       run: |
         docker push mukiwa/gitops-demo:${{ steps.version.outputs.tag }}
 
-    - name: Create and push Git tag
+    - name: Push Git tag using PAT
+      env:
+        GH_PAT: ${{ secrets.GH_PAT }}
+        TAG: ${{ steps.version.outputs.tag }}
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
-        git tag ${{ steps.version.outputs.tag }}
-        git push origin ${{ steps.version.outputs.tag }}
+        git tag $TAG
+        git remote set-url origin https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git
+        git push origin $TAG
