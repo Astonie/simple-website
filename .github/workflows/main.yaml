@@ -53,25 +53,11 @@ jobs:
       run: |
         docker push mukiwa/gitops-demo:${{ steps.version.outputs.tag }}
 
-    - name: Check GH_PAT secret
-      run: |
-        if [ -z "${{ secrets.GH_PAT }}" ]; then
-          echo "GH_PAT is empty or not set"
-          exit 1
-        else
-          echo "GH_PAT is set"
-        fi
-
-    - name: Push Git tag using PAT
+    - name: Push Git tag
       env:
-        GH_PAT: ${{ secrets.GH_PAT }}
         TAG: ${{ steps.version.outputs.tag }}
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
         git tag $TAG
-
-        git remote remove origin || true
-        git remote add origin "https://x-access-token:${GH_PAT}@github.com/Astonie/simple-website.git"
-
         git push origin $TAG
