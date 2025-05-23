@@ -14,7 +14,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # Needed to get tags
+        fetch-depth: 0  # Needed to fetch tags
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -62,7 +62,8 @@ jobs:
         git config user.email "github-actions@github.com"
         git tag $TAG
 
-        # Set correct remote with access token
-        git remote set-url origin https://x-access-token:${GH_PAT}@github.com/Astonie/simple-website.git
+        # Fix remote URL setup to avoid "No such URL found" error
+        git remote remove origin || true
+        git remote add origin https://x-access-token:${GH_PAT}@github.com/Astonie/simple-website.git
 
         git push origin $TAG
